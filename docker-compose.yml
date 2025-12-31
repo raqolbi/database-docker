@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:8.4
     container_name: mysql_db
     restart: unless-stopped
     environment:
@@ -13,11 +13,11 @@ services:
     volumes:
       - ${MYSQL_DATA_PATH}:/var/lib/mysql
     command:
-      - --default-authentication-plugin=mysql_native_password
+      - --skip-name-resolve
       - --bind-address=0.0.0.0
 
   mariadb:
-    image: mariadb:10.11
+    image: mariadb:11.4
     container_name: mariadb_db
     restart: unless-stopped
     environment:
@@ -33,14 +33,15 @@ services:
       - --bind-address=0.0.0.0
 
   postgres:
-    image: postgres:16
+    image: postgres:17
     container_name: postgres_db
     restart: unless-stopped
     environment:
       TZ: ${POSTGRES_TZ}
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
     ports:
       - "${POSTGRES_HOST_PORT}:5432"
     volumes:
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d

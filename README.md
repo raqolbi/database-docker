@@ -1,23 +1,25 @@
 # Docker Database Stack (MySQL · MariaDB · PostgreSQL)
 
-A unified and production-ready **Docker Compose** setup to run **MySQL**, **MariaDB**, and **PostgreSQL** simultaneously with **persistent storage**, **environment-based configuration**, and **customizable ports**.
+A unified, production-ready **Docker Compose** stack for running **MySQL**, **MariaDB**, and **PostgreSQL** side-by-side with **persistent storage**, **environment-based configuration**, **per-service timezones**, and **multi-database support**.
 
-This repository is suitable for **local development**, **self-hosted servers**, **staging**, and **learning environments** where multiple databases are required side-by-side.
+This repository is designed for **local development**, **self-hosted servers**, **staging**, and **long-running database servers** where reliability, clarity, and repeatability are required.
 
 ---
 
 ## ✨ Features
 
-- MySQL 8.x
-- MariaDB 10.11 (LTS)
-- PostgreSQL 16
-- Single `.env` file for all configurations
+- **MySQL 8.4 (LTS)**
+- **MariaDB 11.4 (LTS)**
+- **PostgreSQL 17**
+- Single `.env` file for all configuration
 - Persistent data storage on host filesystem
 - Custom host ports (no default port conflicts)
-- Root / superuser support
+- Per-database timezone configuration
+- Root / superuser access for all engines
 - Dedicated application user (`momod`)
-- Local and remote access enabled
-- Clean and minimal Docker Compose setup
+- PostgreSQL app user auto-created from `.env`
+- Multi-database ready (not bound to a single database name)
+- Clean, minimal, and production-oriented Docker Compose setup
 
 ---
 
@@ -27,7 +29,10 @@ This repository is suitable for **local development**, **self-hosted servers**, 
 database-docker/
 ├── .env
 ├── docker-compose.yml
-└── README.md
+├── README.md
+└── postgres/
+    └── init/
+        └── 01-create-app-user.sh
 ```
 
 ---
@@ -52,32 +57,58 @@ sudo chown -R $USER:$USER /mnt/data/Coding/Database
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Configuration (.env)
 
-All configuration is handled via the `.env` file:
+All configuration is handled via the `.env` file.
 
-- Database credentials
-- Host ports
-- Database names
-- Storage paths
-- Timezone
-
-Example:
+### Example `.env`
 
 ```env
+# ===============================
+# MYSQL (8.4 LTS)
+# ===============================
 MYSQL_HOST_PORT=3307
+MYSQL_ROOT_PASSWORD=change_me
+MYSQL_USER=momod
+MYSQL_PASSWORD=change_me
+MYSQL_TZ=Asia/Jakarta
+MYSQL_DATA_PATH=/mnt/data/Coding/Database/mysql/data
+
+# ===============================
+# MARIADB (11.4 LTS)
+# ===============================
 MARIADB_HOST_PORT=3308
-POSTGRES_HOST_PORT=5433
+MARIADB_ROOT_PASSWORD=change_me
+MARIADB_USER=momod
+MARIADB_PASSWORD=change_me
+MARIADB_TZ=Asia/Jakarta
+MARIADB_DATA_PATH=/mnt/data/Coding/Database/mariadb/data
+
+# ===============================
+# POSTGRESQL (17)
+# root-equivalent user = postgres
+# ===============================
+POSTGRES_HOST_PORT=5432
+POSTGRES_ROOT_PASSWORD=change_me
+POSTGRES_USER_APP=momod
+POSTGRES_PASSWORD_APP=change_me
+POSTGRES_TZ=UTC
+POSTGRES_DATA_PATH=/mnt/data/Coding/Database/postgre/data
 ```
 
-> ⚠️ **Important**  
-> Always change default passwords before using this setup in production.
+### Important Notes
+
+- No database name is predefined  
+  → You are free to create **multiple databases** per engine.
+- Environment variables are used for **initial bootstrap only**.
+- Changing `.env` passwords **does not update existing databases**.
+- Always add `.env` to `.gitignore`.
 
 ---
 
 ## 🚀 Getting Started
 
-Start all databases:
+Start all database services:
 
 ```bash
 docker compose up -d
@@ -97,22 +128,69 @@ docker compose down
 
 ---
 
+## 🧑‍💻 PostgreSQL App User Automation (from `.env`)
+
+PostgreSQL Docker images support **only one user via environment variables** at initialization.
+
+To create an additional application user (`momod`) **using values from `.env`**, this project uses an **init shell script** placed in:
+
+```text
+/docker-entrypoint-initdb.d
+```
+
+### How it works
+
+1. PostgreSQL initializes a new data directory
+2. The `postgres` superuser is created
+3. All `.sh` and `.sql` files in `/docker-entrypoint-initdb.d` are executed
+4. `01-create-app-user.sh` reads environment variables and creates `momod`
+5. Scripts run **only once** (when the data directory is empty)
+
+This is the **official and recommended approach** for PostgreSQL Docker images.
+
+---
+
 ## 🔌 Connection Examples
 
 ### MySQL
+
 ```bash
 mysql -h 127.0.0.1 -P 3307 -u momod -p
 ```
 
 ### MariaDB
+
 ```bash
 mysql -h 127.0.0.1 -P 3308 -u momod -p
 ```
 
-### PostgreSQL
+### PostgreSQL (root-equivalent)
+
 ```bash
-psql -h 127.0.0.1 -p 5433 -U momod appdb
+psql -h 127.0.0.1 -p 5432 -U postgres
 ```
+
+### PostgreSQL (application user)
+
+```bash
+psql -h 127.0.0.1 -p 5432 -U momod
+```
+
+---
+
+## 🕒 Timezone Strategy
+
+| Database   | Timezone     |
+| ---------- | ------------ |
+| MySQL      | Asia/Jakarta |
+| MariaDB    | Asia/Jakarta |
+| PostgreSQL | UTC          |
+
+### Recommendation
+
+- Use **UTC** for production databases
+- Convert timezones at the application layer
+- Avoid mixing local timezones across services in production
 
 ---
 
@@ -121,11 +199,13 @@ psql -h 127.0.0.1 -p 5433 -U momod appdb
 This setup exposes database ports on the host machine.
 
 For production environments, consider:
+
 - Changing all default passwords
+- Restricting access using firewall rules
 - Binding services to internal IPs only
-- Using firewall rules (UFW / iptables)
-- Accessing databases via VPN or SSH tunnel
-- Applying database-level access restrictions
+- Using VPN or SSH tunneling for remote access
+- Applying least-privilege database permissions
+- Avoid using root / `postgres` users in applications
 
 ---
 
@@ -133,7 +213,7 @@ For production environments, consider:
 
 - Local development
 - Multi-database testing
-- Self-hosted database server
+- Long-running self-hosted database server
 - CI/CD pipelines
 - Docker and database learning labs
 
@@ -142,7 +222,7 @@ For production environments, consider:
 ## 📄 License
 
 MIT License  
-You are free to use, modify, and distribute this project.
+Free to use, modify, and distribute.
 
 ---
 
