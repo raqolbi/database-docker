@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      TZ: ${MYSQL_TZ}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_HOST_PORT}:3306"
+    volumes:
+      - ${MYSQL_DATA_PATH}:/var/lib/mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --bind-address=0.0.0.0
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb_db
+    restart: unless-stopped
+    environment:
+      TZ: ${MARIADB_TZ}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+    ports:
+      - "${MARIADB_HOST_PORT}:3306"
+    volumes:
+      - ${MARIADB_DATA_PATH}:/var/lib/mysql
+    command:
+      - --bind-address=0.0.0.0
+
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      TZ: ${POSTGRES_TZ}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_HOST_PORT}:5432"
+    volumes:
+      - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
