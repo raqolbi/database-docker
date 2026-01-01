@@ -1,47 +1,157 @@
 services:
+  # ==================================================
+  # MySQL 8.4 (LTS)
+  # ==================================================
   mysql:
     image: mysql:8.4
     container_name: mysql_db
     restart: unless-stopped
+
     environment:
+      # Container timezone
       TZ: ${MYSQL_TZ}
+
+      # Root (superuser) password
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+      # Application user (created at init)
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
     ports:
+      # MySQL host access
       - "${MYSQL_HOST_PORT}:3306"
+
     volumes:
+      # Persistent MySQL data
       - ${MYSQL_DATA_PATH}:/var/lib/mysql
+
+      # Initialization scripts:
+      # - ./mysql/init:/docker-entrypoint-initdb.d
+
+      # Custom scripts (if any)
+      - ./scripts:/scripts:ro
+
     command:
-      - --skip-name-resolve
+      # Allow remote connections
       - --bind-address=0.0.0.0
 
+      # Disable reverse DNS lookups (recommended)
+      - --skip-name-resolve
+
+  # ==================================================
+  # MariaDB 11.4 (LTS)
+  # ==================================================
   mariadb:
     image: mariadb:11.4
     container_name: mariadb_db
     restart: unless-stopped
+
     environment:
+      # Container timezone
       TZ: ${MARIADB_TZ}
+
+      # Root (superuser) password
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+
+      # Application user (created at init)
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+
     ports:
+      # MariaDB host access
       - "${MARIADB_HOST_PORT}:3306"
+
     volumes:
+      # Persistent MariaDB data
       - ${MARIADB_DATA_PATH}:/var/lib/mysql
+
+      # Initialization scripts:
+      # - ./mariadb/init:/docker-entrypoint-initdb.d
+
+      # Custom scripts (if any)
+      - ./scripts:/scripts:ro
+
     command:
+      # Allow remote connections
       - --bind-address=0.0.0.0
 
+      # Disable reverse DNS lookups
+      - --skip-name-resolve
+
+  # ==================================================
+  # PostgreSQL 17
+  # ==================================================
   postgres:
     image: postgres:17
     container_name: postgres_db
     restart: unless-stopped
+
     environment:
+      # Container timezone
       TZ: ${POSTGRES_TZ}
-      POSTGRES_USER: ${POSTGRES_USER}
+
+      # --------------------------------------------------
+      # PostgreSQL superuser (root-equivalent)
+      #
+      # IMPORTANT:
+      # PostgreSQL Docker image only supports ONE user
+      # via environment variables at initialization.
+      # We always keep this as 'postgres'.
+      # --------------------------------------------------
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+
+      # --------------------------------------------------
+      # Application user credentials
+      #
+      # These variables are NOT handled by PostgreSQL
+      # directly, but are consumed by:
+      # - init scripts (docker-entrypoint-initdb.d)
+      # - PgBouncer entrypoint script
+      # --------------------------------------------------
+      POSTGRES_USER_APP: ${POSTGRES_USER_APP}
+      POSTGRES_PASSWORD_APP: ${POSTGRES_PASSWORD_APP}
+
     ports:
+      # Direct PostgreSQL access
+      # (admin tasks, migrations, debugging)
       - "${POSTGRES_HOST_PORT}:5432"
+
     volumes:
+      # Persistent PostgreSQL data
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
+
+      # Initialization scripts:
+      # - Create application user
+      # - Assign CREATEDB / CREATEROLE privileges
+      # NOTE: Scripts run ONLY if data directory is empty
       - ./postgres/init:/docker-entrypoint-initdb.d
+
+  # ==================================================
+  # PgBouncer (PostgreSQL Connection Pooler)
+  # ==================================================
+  pgbouncer:
+    build: ./pgbouncer
+    container_name: pgbouncer
+    restart: unless-stopped
+
+    depends_on:
+      - postgres
+
+    ports:
+      # PgBouncer client access (applications / SQL clients)
+      - "${PGBOUNCER_PORT}:6432"
+
+    environment:
+      # Admin / auth user (must exist in PostgreSQL)
+      PGBOUNCER_AUTH_USER: ${PGBOUNCER_AUTH_USER}
+      PGBOUNCER_AUTH_PASSWORD: ${PGBOUNCER_AUTH_PASSWORD}
+
+      # Application user
+      PGBOUNCER_APP_USER: ${PGBOUNCER_APP_USER}
+      PGBOUNCER_APP_PASSWORD: ${PGBOUNCER_APP_PASSWORD}
+
+    volumes:
+      # PgBouncer runtime configuration only
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
