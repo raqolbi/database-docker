@@ -14,7 +14,7 @@ This repository is designed for **local development**, **self-hosted servers**, 
 
 - **MySQL 8.4 (LTS)**
 - **MariaDB 11.4 (LTS)**
-- **PostgreSQL 17**
+- **PostgreSQL 18.1**
 - **PgBouncer** (custom Alpine-based image)
 - Single `.env` file for all configuration
 - Persistent host-based storage (bind mounts)
@@ -156,7 +156,7 @@ psql -h 127.0.0.1 -p 6432 -U momod
 
 ## 📦 Version
 
-v1.0.0
+v1.0.1
 
 ---
 
