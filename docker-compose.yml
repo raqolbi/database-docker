@@ -83,7 +83,7 @@ services:
   # PostgreSQL 17
   # ==================================================
   postgres:
-    image: postgres:17
+    image: postgres:18.1
     container_name: postgres_db
     restart: unless-stopped
 
@@ -120,7 +120,7 @@ services:
 
     volumes:
       # Persistent PostgreSQL data
-      - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_PATH}:/var/lib/postgresql
 
       # Initialization scripts:
       # - Create application user
