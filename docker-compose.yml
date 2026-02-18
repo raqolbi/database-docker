@@ -6,6 +6,8 @@ services:
     image: mysql:8.4
     container_name: mysql_db
     restart: unless-stopped
+    networks:
+      - shared-net
 
     environment:
       # Container timezone
@@ -46,6 +48,8 @@ services:
     image: mariadb:11.4
     container_name: mariadb_db
     restart: unless-stopped
+    networks:
+      - shared-net
 
     environment:
       # Container timezone
@@ -86,6 +90,8 @@ services:
     image: postgres:18.1
     container_name: postgres_db
     restart: unless-stopped
+    networks:
+      - shared-net
 
     environment:
       # Container timezone
@@ -135,6 +141,8 @@ services:
     build: ./pgbouncer
     container_name: pgbouncer
     restart: unless-stopped
+    networks:
+      - shared-net
 
     depends_on:
       - postgres
@@ -155,3 +163,7 @@ services:
     volumes:
       # PgBouncer runtime configuration only
       - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+
+networks:
+  shared-net:
+    external: true
