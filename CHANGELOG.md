@@ -6,6 +6,51 @@ This project follows a practical **Semantic Versioning** approach.
 
 ---
 
+## [1.0.2] – 2026-02-20
+
+### 🧩 PgBouncer Connectivity & Reset Targeting
+
+This release focuses on improving PostgreSQL/PgBouncer interoperability on external Docker networks and making database reset operations more granular.
+
+---
+
+### 🐞 Fixed
+
+#### PostgreSQL / PgBouncer Authentication
+
+- Updated PgBouncer-related `pg_hba.conf` bootstrap rules to avoid hardcoded network CIDR assumptions.
+- Replaced fixed subnet rules with `samenet` matching so authentication rules remain valid across varying Docker bridge subnets.
+- Made PostgreSQL app-user HBA rule dynamic using `POSTGRES_USER_APP` (fallback: `momod`).
+
+---
+
+### ✨ Added
+
+#### Selective Reset Targets (`reset-databases.sh`)
+
+- `reset-databases.sh` now accepts target arguments:
+  - `mysql`
+  - `mariadb`
+  - `postgre` / `postgres`
+  - `all`
+- Running without arguments keeps previous behavior (reset all databases).
+- Added usage/help support via `-h` / `--help`.
+- Resetting PostgreSQL now also stops/starts `pgbouncer` to keep service state consistent.
+
+---
+
+### 📄 Documentation
+
+- Updated `README.md` reset section with selective reset examples.
+
+---
+
+### 🏷 Versioning
+
+- This release is tagged as **v1.0.2**
+
+---
+
 ## [1.0.1] – 2026-01-05
 
 ### 🔄 PostgreSQL Upgrade Release

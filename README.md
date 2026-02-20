@@ -135,10 +135,17 @@ PGBOUNCER_APP_PASSWORD=momodpassword
 ./setup.sh --no-run
 ```
 
-### Reset all databases
+### Reset databases
 
 ```
+# Reset all (default)
 ./reset-databases.sh
+
+# Reset only MySQL
+./reset-databases.sh mysql
+
+# Reset only MariaDB + PostgreSQL
+./reset-databases.sh mariadb postgre
 ```
 
 ---
