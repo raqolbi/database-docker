@@ -2,33 +2,98 @@
 
 **MySQL · MariaDB · PostgreSQL · PgBouncer**
 
-A **production-ready Docker Compose stack** for running **MySQL**, **MariaDB**, **PostgreSQL**, and **PgBouncer**
-side-by-side with **persistent storage**, **centralized configuration**, and **clean operational workflows**.
+A production-ready Docker Compose stack for running **MySQL**, **MariaDB**, and **PostgreSQL** flexibly — individually, in combination, or all together — with **PgBouncer automatically enabled when PostgreSQL is selected**.
 
-This repository is designed for **local development**, **self-hosted servers**, **staging**, and
-**long-running environments** where stability, clarity, and repeatability matter.
+Designed for:
+
+- Local development
+- Self-hosted servers
+- Staging environments
+- Long-running production systems
+
+Focused on stability, modularity, and repeatable operational workflows.
 
 ---
 
 ## ✨ Features
 
-- **MySQL 8.4 (LTS)**
-- **MariaDB 11.4 (LTS)**
-- **PostgreSQL 18.1**
-- **PgBouncer** (custom Alpine-based image)
-- Single `.env` file for all configuration
-- Persistent host-based storage (bind mounts)
+- MySQL 8.4 (LTS)
+- MariaDB 11.4 (LTS)
+- PostgreSQL 18.1
+- PgBouncer (Alpine-based custom image)
+- Multi-engine selection via CLI flags
+- Automatic PgBouncer inclusion when `--postgres` is used
+- Single centralized `.env` configuration
+- Persistent bind-mounted storage
 - Custom host ports (no conflicts)
-- Per-service timezone support
+- Per-service timezone configuration
 - Dedicated application user (`momod`)
-- MySQL & MariaDB user elevated to SUPER ADMIN after startup
-- PostgreSQL app user auto-created on first initialization
+- MySQL & MariaDB elevated to SUPER ADMIN after startup
+- PostgreSQL application user auto-created on first initialization
 - PgBouncer authentication via PostgreSQL (SCRAM-SHA-256)
-- One-command setup & reset workflow
+- Selective reset per database engine
 
 ---
 
-## 📂 Project Structure (Current)
+## 🆕 Engine Selection (v1.1+)
+
+The setup script supports dynamic engine selection.
+
+### Default (All Engines)
+
+```
+./setup.sh
+```
+
+Starts:
+
+- MySQL
+- MariaDB
+- PostgreSQL
+- PgBouncer (because PostgreSQL is enabled)
+
+---
+
+### PostgreSQL Only (automatically includes PgBouncer)
+
+```
+./setup.sh --postgres
+```
+
+Starts:
+
+- PostgreSQL
+- PgBouncer
+
+---
+
+### MySQL Only
+
+```
+./setup.sh --mysql
+```
+
+---
+
+### PostgreSQL + MySQL
+
+```
+./setup.sh --postgres --mysql
+```
+
+---
+
+### Skip Docker Run
+
+```
+./setup.sh --postgres --no-run
+```
+
+Runs provisioning only (directories, permissions, executable setup) without building or starting containers.
+
+---
+
+## 📂 Project Structure
 
 ```
 database-docker/
@@ -64,12 +129,16 @@ database-docker/
 
 ## 🧱 Persistent Storage Layout
 
+Example:
+
 ```
 /mnt/data/Coding/Database/
 ├── mysql/data
 ├── mariadb/data
 └── postgre/data
 ```
+
+Paths are controlled via the `.env` file.
 
 ---
 
@@ -121,49 +190,72 @@ PGBOUNCER_APP_PASSWORD=momodpassword
 
 ---
 
-## 🚀 Usage
+## 🔄 Reset Databases
 
-### Initial setup
+Reset supports engine selection.
 
-```
-./setup.sh
-```
-
-### Setup only (no docker run)
+### Reset All (default)
 
 ```
-./setup.sh --no-run
-```
-
-### Reset databases
-
-```
-# Reset all (default)
 ./reset-databases.sh
+```
 
-# Reset only MySQL
+### Reset Specific Engines
+
+```
 ./reset-databases.sh mysql
-
-# Reset only MariaDB + PostgreSQL
 ./reset-databases.sh mariadb postgre
 ```
 
+Engines not specified will not be affected.
+
 ---
 
-## 🔌 Connections
+## 🔌 Connection Examples
+
+MySQL:
 
 ```
 mysql -h 127.0.0.1 -P 3306 -u momod -p
+```
+
+MariaDB:
+
+```
 mysql -h 127.0.0.1 -P 3307 -u momod -p
+```
+
+PostgreSQL (direct):
+
+```
 psql -h 127.0.0.1 -p 5432 -U momod
+```
+
+PostgreSQL (via PgBouncer):
+
+```
 psql -h 127.0.0.1 -p 6432 -U momod
 ```
 
 ---
 
+## 🏗 Architecture (When PostgreSQL Enabled)
+
+```
+Application
+   ↓
+PgBouncer (6432)
+   ↓
+PostgreSQL (5432 internal)
+```
+
+For production workloads, applications should connect to PgBouncer for improved stability and connection efficiency.
+
+---
+
 ## 📦 Version
 
-v1.0.2
+v1.0.3
 
 ---
 

@@ -6,6 +6,62 @@ This project follows a practical **Semantic Versioning** approach.
 
 ---
 
+## [1.0.3] – 2026-03-02
+
+### 🚀 Multi-Engine Setup & Automatic Service Selection
+
+This release introduces flexible engine selection during setup and improves orchestration behavior for PostgreSQL + PgBouncer.
+
+---
+
+### ✨ Added
+
+#### Dynamic Engine Selection (`setup.sh`)
+
+- `setup.sh` now supports selective engine installation:
+  - `--mysql`
+  - `--mariadb`
+  - `--postgres`
+- Multiple engines can be combined:
+  - `./setup.sh --postgres --mysql`
+- Running without arguments defaults to **all engines**.
+- Environment variable validation is now dynamic based on selected engines.
+- Directory creation and permission enforcement now target only selected engines.
+
+#### Automatic PgBouncer Inclusion
+
+- Selecting `--postgres` automatically includes:
+  - `postgres`
+  - `pgbouncer`
+- PgBouncer is no longer started unnecessarily when PostgreSQL is not selected.
+- Docker build & up commands now operate only on selected services.
+
+---
+
+### 🔧 Improved
+
+- Setup workflow is now modular and production-safe.
+- Reduced unnecessary directory permission changes for unused engines.
+- Docker service startup logic is more deterministic and minimal.
+
+---
+
+### 📄 Documentation
+
+- Updated `README.md` with:
+  - Multi-engine selection examples
+  - Clarified PgBouncer auto-inclusion behavior
+  - Updated usage instructions
+
+---
+
+### 🏷 Versioning
+
+- This release is tagged as **v1.0.3**
+- Classified as a **PATCH release** (non-breaking operational enhancement)
+
+---
+
 ## [1.0.2] – 2026-02-20
 
 ### 🧩 PgBouncer Connectivity & Reset Targeting
