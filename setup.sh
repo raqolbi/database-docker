@@ -131,6 +131,43 @@ EOF
   echo "✅ .env created at $(pwd)/.env"
 }
 
+select_engines_interactive() {
+  echo
+  echo "Which database engines do you want?"
+  echo "  1) PostgreSQL only (+ PgBouncer)"
+  echo "  2) MySQL only"
+  echo "  3) MariaDB only"
+  echo "  4) All engines"
+  echo "  5) Custom (enter numbers separated by space, e.g. 1 2)"
+  local engine_choice
+  engine_choice="$(read_default "Choice" "4")"
+
+  USE_POSTGRES=false
+  USE_MYSQL=false
+  USE_MARIADB=false
+
+  case "$engine_choice" in
+    1) USE_POSTGRES=true ;;
+    2) USE_MYSQL=true ;;
+    3) USE_MARIADB=true ;;
+    4) USE_POSTGRES=true; USE_MYSQL=true; USE_MARIADB=true ;;
+    *)
+      for n in $engine_choice; do
+        case $n in
+          1) USE_POSTGRES=true ;;
+          2) USE_MYSQL=true ;;
+          3) USE_MARIADB=true ;;
+        esac
+      done
+      ;;
+  esac
+
+  if [ "$USE_POSTGRES" = false ] && [ "$USE_MYSQL" = false ] && [ "$USE_MARIADB" = false ]; then
+    echo "❌ No engine selected"
+    exit 1
+  fi
+}
+
 ensure_env() {
   if [ -f .env ]; then
     echo
@@ -139,11 +176,17 @@ ensure_env() {
     if [[ "$overwrite_reply" =~ ^[Yy]$ ]]; then
       cp .env ".env.bak.$(date +%Y%m%d%H%M%S)"
       echo "   ℹ️  Previous .env backed up"
+      if [ "$ENGINE_FLAGS" = false ]; then
+        select_engines_interactive
+      fi
       generate_env_interactive overwrite
     else
       echo "ℹ️  Keeping existing .env"
     fi
   else
+    if [ "$ENGINE_FLAGS" = false ]; then
+      select_engines_interactive
+    fi
     generate_env_interactive
   fi
 }
@@ -196,7 +239,8 @@ for arg in "$@"; do
   esac
 done
 
-if [ "$ENGINE_FLAGS" = false ] && [ "$#" -eq 0 ]; then
+if [ "$ENGINE_FLAGS" = false ] && [ "$#" -eq 0 ] && [ -f .env ]; then
+  # Keeping existing .env without CLI flags — start all engines
   USE_POSTGRES=true
   USE_MYSQL=true
   USE_MARIADB=true
@@ -227,7 +271,7 @@ Options:
   -h, --help   Show this help
 
 If .env does not exist, an interactive wizard runs automatically.
-If .env already exists, you will be asked whether to overwrite it.
+If .env already exists, you will be asked whether to overwrite it (engine selection reappears on overwrite).
 Examples:
   ./setup.sh --postgres          # PostgreSQL only, interactive .env
   ./setup.sh --mysql --mariadb   # MySQL + MariaDB
@@ -244,55 +288,18 @@ HELP
   done
 fi
 
-# Interactive engine selection when no .env and no engine flags
-if [ ! -f .env ] && [ "$ENGINE_FLAGS" = false ]; then
-  echo
-  echo "Which database engines do you want?"
-  echo "  1) PostgreSQL only (+ PgBouncer)"
-  echo "  2) MySQL only"
-  echo "  3) MariaDB only"
-  echo "  4) All engines"
-  echo "  5) Custom (enter numbers separated by space, e.g. 1 2)"
-  engine_choice="$(read_default "Choice" "4")"
-
-  USE_POSTGRES=false
-  USE_MYSQL=false
-  USE_MARIADB=false
-
-  case "$engine_choice" in
-    1) USE_POSTGRES=true ;;
-    2) USE_MYSQL=true ;;
-    3) USE_MARIADB=true ;;
-    4) USE_POSTGRES=true; USE_MYSQL=true; USE_MARIADB=true ;;
-    *)
-      for n in $engine_choice; do
-        case $n in
-          1) USE_POSTGRES=true ;;
-          2) USE_MYSQL=true ;;
-          3) USE_MARIADB=true ;;
-        esac
-      done
-      ;;
-  esac
-
-  if [ "$USE_POSTGRES" = false ] && [ "$USE_MYSQL" = false ] && [ "$USE_MARIADB" = false ]; then
-    echo "❌ No engine selected"
-    exit 1
-  fi
-fi
-
 echo "========================================="
 echo " Database Stack Initial Setup"
 echo "========================================="
-
-if [ "$USE_POSTGRES" = true ]; then echo "  • PostgreSQL + PgBouncer"; fi
-if [ "$USE_MYSQL" = true ]; then echo "  • MySQL"; fi
-if [ "$USE_MARIADB" = true ]; then echo "  • MariaDB"; fi
 
 # ------------------------------------------
 # Ensure .env exists (interactive if missing or on overwrite)
 # ------------------------------------------
 ensure_env
+
+if [ "$USE_POSTGRES" = true ]; then echo "  • PostgreSQL + PgBouncer"; fi
+if [ "$USE_MYSQL" = true ]; then echo "  • MySQL"; fi
+if [ "$USE_MARIADB" = true ]; then echo "  • MariaDB"; fi
 
 set -a
 source .env
