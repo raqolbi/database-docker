@@ -360,20 +360,43 @@ echo "🔧 Ensuring executable scripts..."
 [ -f "./scripts/mariadb-make-superadmin.sh" ] && chmod +x ./scripts/mariadb-make-superadmin.sh
 
 # ------------------------------------------
-# Ensure Docker network exists
+# Fix stale shared-net (manual create vs Compose-managed)
 # ------------------------------------------
-if [ "$RUN_DOCKER" = true ]; then
+fix_shared_net() {
   if ! docker network inspect shared-net >/dev/null 2>&1; then
-    echo
-    echo "🌐 Creating Docker network 'shared-net'..."
-    docker network create shared-net
+    return 0
   fi
-fi
+
+  local label containers
+  label="$(docker network inspect shared-net --format '{{index .Labels "com.docker.compose.network"}}' 2>/dev/null || true)"
+  containers="$(docker network inspect shared-net --format '{{len .Containers}}' 2>/dev/null || echo "0")"
+
+  if [ "$label" = "shared-net" ]; then
+    return 0
+  fi
+
+  echo
+  echo "⚠️  Network 'shared-net' exists but was created outside Compose (label mismatch)."
+  echo "   This can happen if the network was created manually with 'docker network create'."
+
+  if [ "$containers" != "0" ]; then
+    echo
+    echo "   Containers are still attached. Stop them first, then recreate the network:"
+    echo "     docker compose down"
+    echo "     docker network rm shared-net"
+    echo "     ./setup.sh"
+    exit 1
+  fi
+
+  echo "   No containers attached — removing old network (Compose will recreate it)..."
+  docker network rm shared-net
+}
 
 # ------------------------------------------
 # Docker
 # ------------------------------------------
 if [ "$RUN_DOCKER" = true ]; then
+  fix_shared_net
   echo
   echo "🐳 Building selected services..."
 
