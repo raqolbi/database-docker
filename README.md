@@ -15,19 +15,61 @@ Focused on stability, modularity, and repeatable operational workflows.
 
 ---
 
+## 🚀 Quick Start (Interactive — no manual `.env` required)
+
+**Prerequisites:** Docker, Docker Compose, and `sudo` access on the VM.
+
+```bash
+git clone <repo-url> database-docker
+cd database-docker
+chmod +x setup.sh
+./setup.sh
+```
+
+That is all you need for a first-time install. The script will:
+
+1. Ask which database engine(s) to install
+2. **Create `.env` automatically** (passwords, ports, data paths, timezone)
+3. Create data directories and fix permissions
+4. Create the Docker network
+5. Build and start containers
+6. Print **remote connection info** for other VMs
+
+You do **not** need to run `cp .env.example .env` or edit any file before the first run.
+
+On subsequent runs, if `.env` already exists you will be asked: **overwrite or keep?** (default: keep).
+
+### One-liner examples
+
+```bash
+# Interactive wizard + PostgreSQL only (+ PgBouncer)
+./setup.sh --postgres
+
+# Interactive wizard + MySQL + MariaDB
+./setup.sh --mysql --mariadb
+
+# Prepare directories only, skip Docker (still creates .env if missing)
+./setup.sh --postgres --no-run
+```
+
+Press **Enter** at any prompt to accept the default value shown in brackets.
+
+---
+
 ## ✨ Features
 
 - MySQL 8.4 (LTS)
 - MariaDB 11.4 (LTS)
-- PostgreSQL 18.1
+- PostgreSQL 18.4
 - PgBouncer (Alpine-based custom image)
-- Multi-engine selection via CLI flags
+- **Fully interactive first-time setup** — `.env` generated automatically
+- Multi-engine selection via CLI flags or interactive menu
 - Automatic PgBouncer inclusion when `--postgres` is used
-- Single centralized `.env` configuration
+- Custom host ports exposed for remote VM access
 - Persistent bind-mounted storage
-- Custom host ports (no conflicts)
 - Per-service timezone configuration
-- Dedicated application user (`momod`)
+- Auto-generated secure passwords (optional)
+- Dedicated application user (default: `momod`, configurable)
 - MySQL & MariaDB elevated to SUPER ADMIN after startup
 - PostgreSQL application user auto-created on first initialization
 - PgBouncer authentication via PostgreSQL (SCRAM-SHA-256)
@@ -35,7 +77,35 @@ Focused on stability, modularity, and repeatable operational workflows.
 
 ---
 
-## 🆕 Engine Selection (v1.1+)
+## 🌐 Remote Access (Multi-VM Setup)
+
+Typical deployment: **1 VM runs Docker + databases**, other VMs connect over the network.
+
+Host ports are configured during the interactive wizard (or in `.env`):
+
+| Service   | Default port | Env variable          |
+|-----------|-------------|------------------------|
+| MySQL     | 3306        | `MYSQL_HOST_PORT`      |
+| MariaDB   | 3307        | `MARIADB_HOST_PORT`    |
+| PostgreSQL| 5432        | `POSTGRES_HOST_PORT`   |
+| PgBouncer | 6432        | `PGBOUNCER_PORT`       |
+
+After setup, connect from another VM:
+
+```
+mysql  -h <DB_VM_IP> -P 3306 -u momod -p
+psql   -h <DB_VM_IP> -p 6432 -U momod    # PgBouncer — recommended for apps
+```
+
+Open firewall on the **database VM** (restrict to app VM IPs in production):
+
+```bash
+sudo ufw allow from <APP_VM_IP> to any port 6432 proto tcp
+```
+
+---
+
+## 🆕 Engine Selection
 
 The setup script supports dynamic engine selection.
 
@@ -129,20 +199,32 @@ database-docker/
 
 ## 🧱 Persistent Storage Layout
 
-Example:
+Default base path (set during interactive setup): `/var/lib/database-docker`
 
 ```
-/mnt/data/Coding/Database/
+/var/lib/database-docker/
 ├── mysql/data
 ├── mariadb/data
 └── postgre/data
 ```
 
-Paths are controlled via the `.env` file.
+Paths are stored in `.env`. To change later, edit `.env` and re-run `./setup.sh --no-run`.
 
 ---
 
-## ⚙️ Configuration (.env)
+## ⚙️ Configuration (`.env`)
+
+On first run, `setup.sh` **creates `.env` for you**. If `.env` already exists, the script asks whether to **overwrite** it (previous file is backed up as `.env.bak.<timestamp>`). Choose **No** to keep the current config and continue setup.
+
+You only need to create or copy it manually if you prefer a fully non-interactive workflow:
+
+```bash
+cp .env.example .env   # optional — only if you skip the wizard
+nano .env
+./setup.sh --postgres
+```
+
+Reference of all supported variables:
 
 ```
 # ===============================
@@ -213,28 +295,30 @@ Engines not specified will not be affected.
 
 ## 🔌 Connection Examples
 
+Replace `<DB_VM_IP>` with the IP shown at the end of `setup.sh`, or use `127.0.0.1` for local access.
+
 MySQL:
 
 ```
-mysql -h 127.0.0.1 -P 3306 -u momod -p
+mysql -h <DB_VM_IP> -P 3306 -u momod -p
 ```
 
 MariaDB:
 
 ```
-mysql -h 127.0.0.1 -P 3307 -u momod -p
+mysql -h <DB_VM_IP> -P 3307 -u momod -p
 ```
 
 PostgreSQL (direct):
 
 ```
-psql -h 127.0.0.1 -p 5432 -U momod
+psql -h <DB_VM_IP> -p 5432 -U momod
 ```
 
-PostgreSQL (via PgBouncer):
+PostgreSQL (via PgBouncer — recommended for applications):
 
 ```
-psql -h 127.0.0.1 -p 6432 -U momod
+psql -h <DB_VM_IP> -p 6432 -U momod
 ```
 
 ---
@@ -255,7 +339,7 @@ For production workloads, applications should connect to PgBouncer for improved 
 
 ## 📦 Version
 
-v1.0.3
+v1.0.4
 
 ---
 
