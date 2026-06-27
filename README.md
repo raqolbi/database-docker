@@ -37,7 +37,7 @@ That is all you need for a first-time install. The script will:
 
 You do **not** need to run `cp .env.example .env` or edit any file before the first run.
 
-On subsequent runs, if `.env` already exists you will be asked: **overwrite or keep?** (default: keep).
+On subsequent runs, if `.env` already exists you will be asked: **overwrite or keep?** (default: keep). Choosing **overwrite** runs the engine selection menu again before creating a new `.env`.
 
 ### One-liner examples
 
