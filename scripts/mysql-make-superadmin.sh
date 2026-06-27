@@ -72,10 +72,10 @@ mysql \
   --skip-column-names \
   > /dev/null 2>&1 <<-EOSQL
 
-CREATE USER IF NOT EXISTS 'momod'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
-GRANT ALL PRIVILEGES ON *.* TO 'momod'@'%' WITH GRANT OPTION;
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_USER}'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
 EOSQL
 
-echo "✅ User 'momod' is now MySQL super admin"
+echo "✅ User '${MYSQL_USER}' is now MySQL super admin"
